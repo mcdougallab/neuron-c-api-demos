@@ -2,26 +2,31 @@
 #include <iostream>
 #include <cstdlib>
 #include <cstdint>
+#include <cstring>
 #include "../neuron_api_headers.h"
 
 using std::cout;
 using std::endl;
 using std::exit;
 
-typedef void (*initer_function)(int, const char**, const char**, int64_t);
+typedef void (*initer_function)(int, const char**, const char**, int);
 typedef void (*vd_function)(double);
 typedef void (*vv_function)(void);
 typedef int64_t (*icptr_function)(const char*);
 typedef void* (*vcptr_function)(const char*);
 typedef Symbol* (*scptr_function)(const char*);
-typedef double (*dvptrint_function) (void*, int64_t);
+typedef double (*dvptrint_function) (void*, int);
 typedef Symbol* (*scptroptr_function) (char*, Object*);
-typedef double (*dsio_function) (Symbol*, int64_t, Object*);
+typedef double (*dsio_function) (Symbol*, int, Object*);
 typedef Symbol* (*scptrslptr_function) (const char*, Symlist*);
 typedef Object* (*optrsptri_function) (Symbol*, int);
 typedef void (*voptr_function) (Object*);
 typedef void (*vf2icif_function)(int (*)(int, char*), int(*)());
-
+typedef int (*ivptr_function)(void*);
+typedef double* (*dptrvptr_function)(void*);
+typedef double (*dv_function)(void);
+typedef void (*voptrsptri_function)(Object*, Symbol*, int);
+typedef void (*vcptrptr_function)(char**);
 
 static const char* argv[] = {"nrn_test", "-nogui", "-nopython", NULL};
 
@@ -75,6 +80,7 @@ void register_print_function(void* handle, int (*print_function)(int, char*)) {
 int main(void) {
     char* error;
     Symbol* sym;
+    Symbol* sym2;
     void* handle = dlopen("libnrniv.dylib", RTLD_NOW | RTLD_LOCAL); 
     if (!handle) {
         cout << "Couldn't open dylib." << endl << dlerror() << endl;
@@ -123,12 +129,26 @@ int main(void) {
     auto nrnmpi_stubs = (vv_function) dlsym(handle, "_Z12nrnmpi_stubsv");
     // no assert because may not exist if no dynamic MPI compiled in
 
-    auto hoc_newobj1 = (optrsptri_function) dlsym(handle, "hoc_newobj1");
-    assert("hoc_newobj1");
+    auto hoc_newobj1 = (optrsptri_function) dlsym(handle, "_Z11hoc_newobj1P6Symboli");
+    assert(hoc_newobj1);
 
     auto hoc_obj_ref = (voptr_function) dlsym(handle, "hoc_obj_ref");
     assert(hoc_obj_ref);
 
+    auto vector_capacity = (ivptr_function) dlsym(handle, "vector_capacity");
+    assert(vector_capacity);
+
+    auto vector_vec = (dptrvptr_function) dlsym(handle, "vector_vec");
+    assert(vector_vec);
+
+    auto hoc_pushstr = (vcptrptr_function) dlsym(handle, "hoc_pushstr");
+    assert(hoc_pushstr);
+
+    auto call_ob_proc = (voptrsptri_function) dlsym(handle, "hoc_call_ob_proc");
+    assert(call_ob_proc);
+
+    auto hoc_xpop = (dv_function) dlsym(handle, "hoc_xpop");
+    assert(hoc_xpop);
 
     /***************************
      * 
@@ -208,5 +228,40 @@ int main(void) {
      * Vectors
      **************************/
     print_class_methods("Vector");
+    sym = hoc_lookup("Vector");
+    hoc_pushx(5);
+    Object* my_vec = hoc_newobj1(sym, 1);
+    cout << "my_vec refcount: " << my_vec->refcount << endl;
+    cout << "vector_capacity(my_vec) = " << vector_capacity(my_vec->u.this_pointer) << endl;
+    double* vec_data = vector_vec(my_vec->u.this_pointer);
+    for (auto i = 0; i < vector_capacity(my_vec->u.this_pointer); i++) {
+        vec_data[i] = i * i;
+    }
 
+    // calling: my_vec.printf()
+    sym2 = hoc_table_lookup("printf", my_vec->ctemplate->symtable);
+    assert(sym2);
+    call_ob_proc(my_vec, sym2, 0);  // last argument is narg
+
+    // calling: my_vec.apply("sin") -- where "sin" is a built-in function
+    sym2 = hoc_table_lookup("apply", my_vec->ctemplate->symtable);
+    assert(sym2);
+    char* fname_ptr = new char[4];
+    strcpy(fname_ptr, "sin");
+    hoc_pushstr(&fname_ptr);
+    call_ob_proc(my_vec, sym2, 1);  // last argument is narg
+    delete[] fname_ptr;
+
+    // calling: my_vec.printf(), to show the sines of all the previous values
+    sym2 = hoc_table_lookup("printf", my_vec->ctemplate->symtable);
+    assert(sym2);
+    call_ob_proc(my_vec, sym2, 0);  // last argument is narg
+
+    // calling: my_vec.mean()
+    sym2 = hoc_table_lookup("mean", my_vec->ctemplate->symtable);
+    assert(sym2);
+    call_ob_proc(my_vec, sym2, 0);  // last argument is narg
+    cout << "my_vec.mean() = " << hoc_xpop() << endl;
+    // I don't understand why this has to be in two steps instead of just
+    // hoc_call_objfunc(sym2, 0, my_vec)
 }
