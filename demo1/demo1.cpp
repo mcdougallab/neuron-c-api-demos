@@ -11,6 +11,7 @@ using std::exit;
 
 typedef void (*initer_function)(int, const char**, const char**, int);
 typedef void (*vd_function)(double);
+typedef void (*vdptr_function)(double*);
 typedef void (*vv_function)(void);
 typedef int64_t (*icptr_function)(const char*);
 typedef void* (*vcptr_function)(const char*);
@@ -116,6 +117,9 @@ int main(void) {
 
     auto hoc_pushx = (vd_function) dlsym(handle, "hoc_pushx");
     assert(hoc_pushx);
+
+    auto hoc_pushpx = (vdptr_function) dlsym(handle, "hoc_pushpx");
+    assert(hoc_pushpx);
 
     auto hoc_ret = (vv_function) dlsym(handle, "hoc_ret");
     assert(hoc_ret);
@@ -264,4 +268,28 @@ int main(void) {
     cout << "my_vec.mean() = " << hoc_xpop() << endl;
     // I don't understand why this has to be in two steps instead of just
     // hoc_call_objfunc(sym2, 0, my_vec)
+
+    cout << "Vector.record test (recording 101 time points 0.025 apart):" << endl;
+
+    // create a new Vector
+    sym = hoc_lookup("Vector");
+    Object* t_vec = hoc_newobj1(sym, 0);
+
+    // t_vec.record(&t)
+    hoc_pushpx(hoc_lookup("t")->u.pval);
+    sym2 = hoc_table_lookup("record", t_vec->ctemplate->symtable);
+    assert(sym2);
+    call_ob_proc(t_vec, sym2, 1);
+
+    // finitialize(-65)
+    hoc_pushx(-65);
+    hoc_call_func(hoc_lookup("finitialize"), 1);   
+
+    // do a bunch of fadvances
+    for(auto i = 0; i < 100; i++) {
+        hoc_call_func(hoc_lookup("fadvance"), 0);   
+    }
+
+    // now print out the recorded time points
+    call_ob_proc(t_vec, hoc_table_lookup("printf", t_vec->ctemplate->symtable), 0);
 }
