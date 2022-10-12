@@ -172,17 +172,22 @@ int main(void) {
     ivocmain(3, argv, NULL, 0);
 
 
-    //cout << "Built-in symbols:" << endl;
-    //print_symbol_table(hoc_built_in_symlist);
-
-    auto hoc_built_in_symlist = (Symlist*) dlsym(handle, "hoc_built_in_symlist");
+    auto hoc_built_in_symlist = (Symlist**) dlsym(handle, "hoc_built_in_symlist");
     assert(hoc_built_in_symlist);
 
-    auto hoc_top_level_symlist = (Symlist*) dlsym(handle, "hoc_top_level_symlist");
+    auto hoc_top_level_symlist = (Symlist**) dlsym(handle, "hoc_top_level_symlist");
     assert(hoc_top_level_symlist);
 
     // register redirected print
     register_print_function(handle, myprint);
+
+
+    cout << "hoc_built_in_symlist:" << endl;
+    print_symbol_table(*hoc_built_in_symlist);
+
+    cout << endl << "hoc_top_level_symlist:" << endl;
+    print_symbol_table(*hoc_top_level_symlist);
+
 
 
     /***************************
@@ -192,7 +197,7 @@ int main(void) {
         "create soma\n"
     );
 
-    cout << "created the soma; now lets look at topology:" << endl;    
+    cout << endl << "created the soma; now lets look at topology:" << endl;    
 
     /***************************
      * lookup a symbol and call the corresponding function with 0 arguments
