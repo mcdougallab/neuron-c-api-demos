@@ -27,8 +27,14 @@ typedef double* (*dptrvptr_function)(void*);
 typedef double (*dv_function)(void);
 typedef void (*voptrsptri_function)(Object*, Symbol*, int);
 typedef void (*vcptrptr_function)(char**);
+typedef int (*iv_function)(void);
+typedef Section* (*secptrv_function)(void);
+typedef void (*vsecptr_function)(Section*);
+typedef Prop* (*prptrprptrptrinptr_function)(Prop**, int, Node*);
+typedef void (*vsptrdptri_function)(Symbol*, double*, int);
+typedef char* (*cptrsecptr_function)(Section*);
 
-static const char* argv[] = {"nrn_test", "-nogui", "-nopython", NULL};
+static const char* argv[] = {"nrn_test", "-nogui", "-nopython", nullptr};
 
 scptr_function hoc_lookup;
 
@@ -37,10 +43,10 @@ extern "C" void modl_reg() {};
 
 
 void print_symbol_table(Symlist* table) {
-    for (Symbol* sp = table->first; sp != NULL; sp = sp->next) {
+    for (Symbol* sp = table->first; sp != nullptr; sp = sp->next) {
         // type distinguishes methods from properties, return type
         cout << sp->name << " (" << sp->type << ")";
-        if (sp->next != NULL) {
+        if (sp->next != nullptr) {
             cout << ", ";
         }
     }
@@ -73,8 +79,68 @@ void register_print_function(void* handle, int (*print_function)(int, char*)) {
 
     int old_python_flag = *((int*) dlsym(handle, "nrn_is_python_extension"));
     *((int*) dlsym(handle, "nrn_is_python_extension")) = 1;
-    nrnpy_set_pr_etal(myprint, NULL);
+    nrnpy_set_pr_etal(myprint, nullptr);
     *((int*) dlsym(handle, "nrn_is_python_extension")) = old_python_flag;
+}
+
+
+const int CABLESECTION = 1;
+
+// based on the corresponding function in
+// https://github.com/neuronsimulator/nrn/blob/master/src/nrnoc/cabcode.cpp
+Section* new_section(void* handle, Object* ob, Symbol* sym, int i) {
+    Section* sec;
+    Prop* prop;
+    static Symbol* nseg;
+    double d;
+
+    if (!nseg) {
+        nseg = hoc_lookup("nseg");
+    }
+    auto sec_alloc = (secptrv_function) dlsym(handle, "_Z9sec_allocv");
+    assert(sec_alloc);
+    auto tree_changed = (int*) dlsym(handle, "tree_changed");
+    assert(tree_changed);
+    auto section_ref = (vsecptr_function) dlsym(handle, "_Z11section_refP7Section");
+    assert(section_ref);
+    auto nrn_pushsec = (vsecptr_function) dlsym(handle, "nrn_pushsec");
+    assert(nrn_pushsec);
+    auto prop_alloc = (prptrprptrptrinptr_function) dlsym(handle, "_Z10prop_allocPP4PropiP4Node");
+    assert(prop_alloc);
+    auto cable_prop_assign = (vsptrdptri_function) dlsym(handle, "_Z17cable_prop_assignP6SymbolPdi");
+    assert(cable_prop_assign);
+    auto hoc_secname = (cptrsecptr_function) dlsym(handle, "_Z7secnameP7Section");
+    assert(hoc_secname);
+    auto nrn_isecstack = (iv_function) dlsym(handle, "_Z13nrn_isecstackv");
+    assert(nrn_isecstack);
+
+    //_Z11hoc_secnamev   or maybe _Z7secnameP7Section
+
+
+
+    sec = sec_alloc();
+    section_ref(sec);
+    prop = prop_alloc(&(sec->prop), CABLESECTION, (Node*) 0);
+    prop->dparam[0].sym = sym;
+    prop->dparam[5].i = i;
+    if (ob) {
+        prop->dparam[6].obj = ob;
+    } else {
+        prop->dparam[6].obj = nullptr;
+    }
+#if USE_PYTHON
+    prop->dparam[PROP_PY_INDEX]._pvoid = nullptr;
+#endif
+    cout << "before pushing: isecstack = " << nrn_isecstack() << endl;
+    nrn_pushsec(sec);
+    cout << "after pushing: isecstack = " << nrn_isecstack() << endl;
+    d = (double) DEF_nseg;
+    cable_prop_assign(nseg, &d, 0);
+    (*tree_changed) = 1;
+    cout << "test1" << endl;
+    cout << "new section at " << sec << endl;
+    // cout << "new section: " << hoc_secname(sec) << endl;
+    return sec;
 }
 
 int main(void) {
@@ -165,7 +231,7 @@ int main(void) {
         nrnmpi_stubs();
     }
 
-    ivocmain(3, argv, NULL, 0);
+    ivocmain(3, argv, nullptr, 0);
 
 
     //cout << "Built-in symbols:" << endl;
@@ -184,9 +250,18 @@ int main(void) {
     /***************************
      * run HOC code
      **************************/
+    /*
     hoc_oc(
         "create soma\n"
     );
+    */
+
+    Symbol soma_symbol;
+    char* somaname_ptr = new char[5];
+    strcpy(somaname_ptr, "soma");
+    soma_symbol.name = somaname_ptr;
+    soma_symbol.type = 1;
+    new_section(handle, nullptr, &soma_symbol, 0);
 
     cout << "created the soma; now lets look at topology:" << endl;    
 
