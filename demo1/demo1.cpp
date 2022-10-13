@@ -248,6 +248,9 @@ int main(void) {
     cout << "time and voltage:" << endl;
     hoc_oc("print t, v\n");
 
+    cout << "v ptr: " << hoc_lookup("v") << endl;
+    cout << "v->type: " << hoc_lookup("v")->type << endl;
+
     /***************************
      * Vectors
      **************************/
