@@ -28,6 +28,7 @@ typedef double* (*dptrvptr_function)(void*);
 typedef double (*dv_function)(void);
 typedef void (*voptrsptri_function)(Object*, Symbol*, int);
 typedef void (*vcptrptr_function)(char**);
+typedef void (*vsptr_function)(Symbol*);
 
 static const char* argv[] = {"nrn_test", "-nogui", "-nopython", NULL};
 
@@ -154,6 +155,9 @@ int main(void) {
     auto hoc_xpop = (dv_function) dlsym(handle, "hoc_xpop");
     assert(hoc_xpop);
 
+    auto hoc_install_object_data_index = (vsptr_function) dlsym(handle, "hoc_install_object_data_index");
+    assert(hoc_install_object_data_index);
+
     /***************************
      * 
      * Miscellaneous initialization
@@ -193,6 +197,17 @@ int main(void) {
     /***************************
      * run HOC code
      **************************/
+    Symbol axon_symbol;
+    char* axonname_ptr = new char[5];
+    strcpy(axonname_ptr, "axon");
+    axon_symbol.name = axonname_ptr;
+    axon_symbol.type = 1;
+    cout << "attempting to install sym" << endl;
+    hoc_install_object_data_index(sym);
+    cout << "installed..." << endl;
+    //new_section(handle, nullptr, &soma_symbol, 0);
+
+
     hoc_oc(
         "create soma\n"
     );
