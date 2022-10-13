@@ -29,6 +29,7 @@ typedef double (*dv_function)(void);
 typedef void (*voptrsptri_function)(Object*, Symbol*, int);
 typedef void (*vcptrptr_function)(char**);
 typedef void (*vsptr_function)(Symbol*);
+typedef void (*voptrsptritemptrptri_function)(Object*, Symbol*, hoc_Item**, int);
 
 static const char* argv[] = {"nrn_test", "-nogui", "-nopython", NULL};
 
@@ -158,6 +159,9 @@ int main(void) {
     auto hoc_install_object_data_index = (vsptr_function) dlsym(handle, "hoc_install_object_data_index");
     assert(hoc_install_object_data_index);
 
+    auto new_sections = (voptrsptritemptrptri_function) dlsym(handle, "_Z12new_sectionsP6ObjectP6SymbolPP8hoc_Itemi");
+    assert(new_sections);
+
     /***************************
      * 
      * Miscellaneous initialization
@@ -195,19 +199,15 @@ int main(void) {
 
 
     /***************************
+     * creating an anonymous section
+     **************************/
+    auto pitm = new hoc_Item*;
+    new_sections(nullptr, nullptr, pitm, 1);
+    cout << "created an anonymous section" << endl;
+
+    /***************************
      * run HOC code
      **************************/
-    Symbol axon_symbol;
-    char* axonname_ptr = new char[5];
-    strcpy(axonname_ptr, "axon");
-    axon_symbol.name = axonname_ptr;
-    axon_symbol.type = 1;
-    cout << "attempting to install sym" << endl;
-    hoc_install_object_data_index(sym);
-    cout << "installed..." << endl;
-    //new_section(handle, nullptr, &soma_symbol, 0);
-
-
     hoc_oc(
         "create soma\n"
     );
