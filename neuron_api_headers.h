@@ -17,9 +17,22 @@ union Datum;
 struct cTemplate;
 union Objectdata;
 struct Object;
-struct hoc_Item;
+struct Section;
 
-
+struct hoc_Item {
+    union {
+        hoc_Item* itm;
+        hoc_Item* lst;
+        char* str;
+        Symbol* sym;
+        Section* sec;
+        Object* obj;
+        void* vd;
+    } element; /* pointer to the actual item */
+    hoc_Item* next;
+    hoc_Item* prev;
+    short itemtype;
+};
 using hoc_List = hoc_Item;
 
 typedef int (*Pfri)(void);

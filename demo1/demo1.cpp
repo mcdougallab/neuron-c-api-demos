@@ -30,7 +30,7 @@ typedef void (*voptrsptri_function)(Object*, Symbol*, int);
 typedef void (*vcptrptr_function)(char**);
 typedef void (*vsptr_function)(Symbol*);
 typedef void (*voptrsptritemptrptri_function)(Object*, Symbol*, hoc_Item**, int);
-
+typedef char* (*cptrsecptr_function)(Section*);
 static const char* argv[] = {"nrn_test", "-nogui", "-nopython", NULL};
 
 scptr_function hoc_lookup;
@@ -162,6 +162,9 @@ int main(void) {
     auto new_sections = (voptrsptritemptrptri_function) dlsym(handle, "_Z12new_sectionsP6ObjectP6SymbolPP8hoc_Itemi");
     assert(new_sections);
 
+    auto secname = (cptrsecptr_function) dlsym(handle, "_Z7secnameP7Section");
+    assert(secname);
+
     /***************************
      * 
      * Miscellaneous initialization
@@ -211,6 +214,9 @@ int main(void) {
     axon_symbol->type = 1;
     hoc_install_object_data_index(axon_symbol);
     new_sections(nullptr, axon_symbol, pitm, 1);
+    Section* axon = (*pitm)->element.sec;
+    cout << "Just created a section called: " << secname(axon) << endl;
+
 
 
     /***************************
