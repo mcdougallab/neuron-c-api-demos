@@ -32,7 +32,7 @@ typedef void (*vsptr_function)(Symbol*);
 typedef void (*voptrsptritemptrptri_function)(Object*, Symbol*, hoc_Item**, int);
 typedef char* (*cptrsecptr_function)(Section*);
 typedef double* (*dptrsecptrsptrd_function)(Section*, Symbol*, double);
-
+typedef void (*vsecptri_function)(Section*, int);
 
 static const char* argv[] = {"nrn_test", "-nogui", "-nopython", NULL};
 
@@ -171,6 +171,9 @@ int main(void) {
     auto nrn_rangepointer = (dptrsecptrsptrd_function) dlsym(handle, "_Z16nrn_rangepointerP7SectionP6Symbold");
     assert(nrn_rangepointer);
 
+    auto mech_insert1 = (vsecptri_function) dlsym(handle, "_Z12mech_insert1P7Sectioni");
+    assert(mech_insert1);
+
     /***************************
      * 
      * Miscellaneous initialization
@@ -249,11 +252,34 @@ int main(void) {
 
 
     /***************************
+     * add hh mechanism to axon
+     **************************/
+    cout << "inserting hh mechanism" << endl;
+    sym = hoc_lookup("hh");
+    assert(sym);
+    // the type indicates that it's a mechanism; the subtype indicates which
+    mech_insert1(axon, sym->subtype);
+
+    /***************************
      * call finitialize, pass in an initial voltage (so 1 argument instead of 0)
      **************************/
+    cout << "finitialize(3.14)" << endl;
     sym = hoc_lookup("finitialize");
     hoc_pushx(3.14);
     hoc_call_func(sym, 1);
+
+    /***************************
+     * print out the time and the voltage
+     **************************/
+    cout << "time and voltage:" << endl;
+
+    // the symbol type could be used to tell that it's a rangevar
+    // cout << "v->type: " << hoc_lookup("v")->type << endl;
+    // but we know that v is a rangevar
+    cout << "t = " << *(hoc_lookup("t")->u.pval) << "  " 
+         << "axon(0.5).v = " 
+         << *nrn_rangepointer(axon, hoc_lookup("v"), 0.5) 
+         << endl;    
 
     /***************************
      * lookup a top-level symbol and set the value (equivalent to t=1.23)
@@ -265,6 +291,7 @@ int main(void) {
     /***************************
      * call fadvance
      **************************/
+    cout << "fadvance" << endl;
     sym = hoc_lookup("fadvance");
     assert(sym);
     hoc_call_func(sym, 0);
