@@ -9,30 +9,6 @@ using std::cout;
 using std::endl;
 using std::exit;
 
-typedef void (*initer_function)(int, const char**, const char**, int);
-typedef void (*vd_function)(double);
-typedef void (*vdptr_function)(double*);
-typedef void (*vv_function)(void);
-typedef int64_t (*icptr_function)(const char*);
-typedef void* (*vcptr_function)(const char*);
-typedef Symbol* (*scptr_function)(const char*);
-typedef double (*dvptrint_function) (void*, int);
-typedef Symbol* (*scptroptr_function) (char*, Object*);
-typedef double (*dsio_function) (Symbol*, int, Object*);
-typedef Symbol* (*scptrslptr_function) (const char*, Symlist*);
-typedef Object* (*optrsptri_function) (Symbol*, int);
-typedef void (*voptr_function) (Object*);
-typedef void (*vf2icif_function)(int (*)(int, char*), int(*)());
-typedef int (*ivptr_function)(void*);
-typedef double* (*dptrvptr_function)(void*);
-typedef double (*dv_function)(void);
-typedef void (*voptrsptri_function)(Object*, Symbol*, int);
-typedef void (*vcptrptr_function)(char**);
-typedef void (*vsptr_function)(Symbol*);
-typedef void (*voptrsptritemptrptri_function)(Object*, Symbol*, hoc_Item**, int);
-typedef char* (*cptrsecptr_function)(Section*);
-typedef double* (*dptrsecptrsptrd_function)(Section*, Symbol*, double);
-typedef void (*vsecptri_function)(Section*, int);
 
 static const char* argv[] = {"nrn_test", "-nogui", "-nopython", NULL};
 
