@@ -199,9 +199,24 @@ int main(void) {
 
 
     /***************************
+     * creating a named section
+     **************************/
+    Symbol* axon_symbol = new Symbol;
+    auto pitm = new hoc_Item*;
+
+    cout << "Attempting to create a named section" << endl;
+    char* axonname_ptr = new char[5];
+    strcpy(axonname_ptr, "axon");
+    axon_symbol->name = axonname_ptr;
+    axon_symbol->type = 1;
+    hoc_install_object_data_index(axon_symbol);
+    new_sections(nullptr, axon_symbol, pitm, 1);
+
+
+    /***************************
      * creating an anonymous section
      **************************/
-    auto pitm = new hoc_Item*;
+    pitm = new hoc_Item*;
     new_sections(nullptr, nullptr, pitm, 1);
     cout << "created an anonymous section" << endl;
 
