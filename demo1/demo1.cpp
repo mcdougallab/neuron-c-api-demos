@@ -31,6 +31,9 @@ typedef void (*vcptrptr_function)(char**);
 typedef void (*vsptr_function)(Symbol*);
 typedef void (*voptrsptritemptrptri_function)(Object*, Symbol*, hoc_Item**, int);
 typedef char* (*cptrsecptr_function)(Section*);
+typedef double* (*dptrsecptrsptrd_function)(Section*, Symbol*, double);
+
+
 static const char* argv[] = {"nrn_test", "-nogui", "-nopython", NULL};
 
 scptr_function hoc_lookup;
@@ -165,6 +168,9 @@ int main(void) {
     auto secname = (cptrsecptr_function) dlsym(handle, "_Z7secnameP7Section");
     assert(secname);
 
+    auto nrn_rangepointer = (dptrsecptrsptrd_function) dlsym(handle, "_Z16nrn_rangepointerP7SectionP6Symbold");
+    assert(nrn_rangepointer);
+
     /***************************
      * 
      * Miscellaneous initialization
@@ -233,7 +239,7 @@ int main(void) {
         "create soma\n"
     );
 
-    cout << endl << "created the soma; now lets look at topology:" << endl;    
+    cout << endl << "created the soma via hoc; now lets look at topology:" << endl;    
 
     /***************************
      * lookup a symbol and call the corresponding function with 0 arguments
@@ -264,13 +270,18 @@ int main(void) {
     hoc_call_func(sym, 0);
 
     /***************************
-     * print out the time and the voltage (print, alas, is a statement not a function)
+     * print out the time and the voltage
      **************************/
     cout << "time and voltage:" << endl;
-    hoc_oc("print t, v\n");
 
-    cout << "v ptr: " << hoc_lookup("v") << endl;
-    cout << "v->type: " << hoc_lookup("v")->type << endl;
+    // the symbol type could be used to tell that it's a rangevar
+    // cout << "v->type: " << hoc_lookup("v")->type << endl;
+    // but we know that v is a rangevar
+    cout << "t = " << *(hoc_lookup("t")->u.pval) << "  " 
+         << "axon(0.5).v = " 
+         << *nrn_rangepointer(axon, hoc_lookup("v"), 0.5) 
+         << endl;
+
 
     /***************************
      * Vectors
