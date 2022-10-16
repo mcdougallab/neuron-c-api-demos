@@ -24,7 +24,7 @@ dvptrint_function hoc_call_func;
 vsecptri_function mech_insert1;
 vsptr_function hoc_install_object_data_index;
 voptrsptritemptrptri_function new_sections;
-
+ppoptr_function ob2pntproc_0;
 
 Object* new_vector_record(double* record) {
     // create a new Vector
@@ -64,8 +64,16 @@ Section* new_section(const char* name) {
 }
 
 
+void set_pp_property(Object* pp, const char* name, double value) {
+    int index = hoc_table_lookup(name, pp->ctemplate->symtable)->u.rng.index;
+    ob2pntproc_0(pp)->prop->param[index] = value;
+}
+
+
 int main(void) {
+    Symbol* sym;
     char* error;
+    int oboff;
     void* handle = dlopen("libnrniv.dylib", RTLD_NOW | RTLD_LOCAL); 
     if (!handle) {
         cout << "Couldn't open dylib." << endl << dlerror() << endl;
@@ -130,6 +138,10 @@ int main(void) {
     mech_insert1 = (vsecptri_function) dlsym(handle, "_Z12mech_insert1P7Sectioni");
     assert(mech_insert1);
 
+    ob2pntproc_0 = (ppoptr_function) dlsym(handle, "ob2pntproc_0");
+    assert(ob2pntproc_0);
+
+
     /***************************
      * 
      * initialization
@@ -164,16 +176,14 @@ int main(void) {
 
 
     /***************************
-     * adding a stimulus via HOC
+     * adding a stimulus at axon(0.5)
      **************************/
-    hoc_oc(
-        "objref iclamp\n"
-        "iclamp = new IClamp(0.5)\n"
-        "iclamp.del = 1\n"
-        "iclamp.dur = 1\n"
-        "iclamp.amp = 100\n"
-    );
-
+    // it's at 0.5 because of the pushx; on the axon because that's the currently accessed section
+    hoc_pushx(0.5);
+    auto iclamp = hoc_newobj1(hoc_lookup("IClamp"), 1);
+    set_pp_property(iclamp, "del", 1);
+    set_pp_property(iclamp, "dur", 1);
+    set_pp_property(iclamp, "amp", 100);
 
     /***************************
      * finitialize(-65)

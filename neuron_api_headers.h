@@ -283,6 +283,17 @@ typedef struct Prop {
     Object* ob;        /* nil if normal property, otherwise the object containing the data*/
 } Prop;
 
+typedef struct Point_process {
+    Section* sec; /* section and node location for the point mechanism*/
+    Node* node;
+    Prop* prop;    /* pointer to the actual property linked to the
+                  node property list */
+    Object* ob;    /* object that owns this process */
+    void* presyn_; /* non-threshold presynapse for NetCon */
+    void* nvi_;    /* NrnVarIntegrator (for local step method) */
+    void* _vnt;    /* NrnThread* (for NET_RECEIVE and multicore) */
+} Point_process;
+
 
 typedef void (*initer_function)(int, const char**, const char**, int);
 typedef void (*vd_function)(double);
@@ -296,6 +307,7 @@ typedef Symbol* (*scptroptr_function) (char*, Object*);
 typedef double (*dsio_function) (Symbol*, int, Object*);
 typedef Symbol* (*scptrslptr_function) (const char*, Symlist*);
 typedef Object* (*optrsptri_function) (Symbol*, int);
+typedef Object* (*optri_function) (int);
 typedef void (*voptr_function) (Object*);
 typedef void (*vf2icif_function)(int (*)(int, char*), int(*)());
 typedef int (*ivptr_function)(void*);
@@ -308,3 +320,4 @@ typedef void (*voptrsptritemptrptri_function)(Object*, Symbol*, hoc_Item**, int)
 typedef char* (*cptrsecptr_function)(Section*);
 typedef double* (*dptrsecptrsptrd_function)(Section*, Symbol*, double);
 typedef void (*vsecptri_function)(Section*, int);
+typedef Point_process* (*ppoptr_function)(Object*);
