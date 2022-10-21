@@ -4,12 +4,14 @@
 #include <cstdlib>
 #include <cstdint>
 #include <cstring>
+#include <vector>
 #include "../neuron_api_headers.h"
 
 using std::cout;
 using std::endl;
 using std::exit;
 using std::ofstream;
+using std::vector;
 
 static const char* argv[] = {"nrn_test", "-nogui", "-nopython", NULL};
 extern "C" void modl_reg() {};
@@ -17,9 +19,7 @@ extern "C" void modl_reg() {};
 scptr_function hoc_lookup;
 optrsptri_function hoc_newobj1;
 scptrslptr_function hoc_table_lookup;
-voptrsptri_function call_ob_proc;
 vd_function hoc_pushx;
-vdptr_function hoc_pushpx;
 dvptrint_function hoc_call_func;
 vsecptri_function mech_insert1;
 vsptr_function hoc_install_object_data_index;
@@ -35,18 +35,6 @@ int* diam_changed;
 vsecptrd_function nrn_length_change;
 nptrsecptrd_function node_exact;
 
-
-Object* new_vector_record(double* record) {
-    // create a new Vector
-    auto sym = hoc_lookup("Vector");
-    auto vec = hoc_newobj1(sym, 0);
-
-    hoc_pushpx(record);
-    auto sym2 = hoc_table_lookup("record", vec->ctemplate->symtable);
-    assert(sym2);
-    call_ob_proc(vec, sym2, 1);
-    return vec;
-}
 
 
 void finitialize(double v0) {
@@ -223,23 +211,11 @@ int main(void) {
     hoc_pushx = (vd_function) dlsym(handle, "hoc_pushx");
     assert(hoc_pushx);
 
-    hoc_pushpx = (vdptr_function) dlsym(handle, "hoc_pushpx");
-    assert(hoc_pushpx);
-
     auto nrnmpi_stubs = (vv_function) dlsym(handle, "_Z12nrnmpi_stubsv");
     // no assert because may not exist if no dynamic MPI compiled in
 
     hoc_newobj1 = (optrsptri_function) dlsym(handle, "_Z11hoc_newobj1P6Symboli");
     assert(hoc_newobj1);
-
-    auto vector_capacity = (ivptr_function) dlsym(handle, "vector_capacity");
-    assert(vector_capacity);
-
-    auto vector_vec = (dptrvptr_function) dlsym(handle, "vector_vec");
-    assert(vector_vec);
-
-    call_ob_proc = (voptrsptri_function) dlsym(handle, "hoc_call_ob_proc");
-    assert(call_ob_proc);
 
     hoc_install_object_data_index = (vsptr_function) dlsym(handle, "hoc_install_object_data_index");
     assert(hoc_install_object_data_index);
@@ -292,7 +268,7 @@ int main(void) {
      **************************/
 
     // commenting out the following line shows the banner
-    *((int64_t*) dlsym(handle, "nrn_nobanner_")) = 1;
+    *((int*) dlsym(handle, "nrn_nobanner_")) = 1;
 
 
     // need this to support dynamic MPI, but might not exist without that enabled
@@ -302,12 +278,15 @@ int main(void) {
 
     ivocmain(3, argv, NULL, 0);
 
-    /***************************
-     * creating Sections
-     **************************/
+    // creating sections
     auto main = new_section("main");
     auto branch1 = new_section("branch1");
     auto branch2 = new_section("branch2");
+    vector<Section*> all_sec;
+    all_sec.push_back(main);
+    all_sec.push_back(branch1);
+    all_sec.push_back(branch2);
+    
 
     cout << "Initial topology:" << endl;
     hoc_call_func(hoc_lookup("topology"), 0);
@@ -316,9 +295,9 @@ int main(void) {
     cout << endl << "Topology after splitting main into 3 segments" << endl;
     hoc_call_func(hoc_lookup("topology"), 0);
 
-    cout << "main.nseg(): " << nseg(main) << endl;
-    cout << "branch1.nseg(): " << nseg(branch1) << endl;
-    cout << "branch2.nseg(): " << nseg(branch2) << endl;
+    for (auto sec: all_sec) {
+        cout << secname(sec) << ".nseg = " << nseg(sec) << endl;
+    }
 
     // connect the beginning of each branch to the end of main
     connect(branch1, 0, main, 1);
@@ -329,14 +308,14 @@ int main(void) {
 
     // add some 3D points to main (note: not cylinders, not related to nseg)
     pt3dadd(main, 1, 2, 3, 4);
-    pt3dadd(main, 21, 2, 3, 1);
+    pt3dadd(main, 201, 2, 3, 1);
 
     // set abstract morphology info for branches (i.e. we're just setting L and
     // diam but not specifying the 3D points
-    set_length(branch1, 10);
+    set_length(branch1, 100);
     set_diameter(branch1, 1);
 
-    set_length(branch2, 11);
+    set_length(branch2, 150);
     set_diameter(branch2, 0.9);
 
     // constructing 3D points for everything remaining (the branches)
@@ -345,7 +324,26 @@ int main(void) {
     cout << endl << "Topology after setting morphology (should be unchanged):" << endl;
     hoc_call_func(hoc_lookup("topology"), 0); 
 
-    print_3d_points_and_segs(main);
-    print_3d_points_and_segs(branch1);
-    print_3d_points_and_segs(branch2);
+    // setting up a simple simulation... 
+    // passive conductance everywhere, inject current at main(0)
+    insert_mechanism(main, "pas");
+    // stimulus at main(0)
+    nrn_pushsec(main);
+    hoc_pushx(0);
+    auto iclamp = hoc_newobj1(hoc_lookup("IClamp"), 1);
+    nrn_sec_pop();
+    set_pp_property(iclamp, "del", 0);
+    set_pp_property(iclamp, "dur", 10000);
+    set_pp_property(iclamp, "amp", 1);
+
+    // init and run for 10 steps
+    finitialize(-65);
+    auto fadvance = hoc_lookup("fadvance");
+    for (auto i=0; i < 10; i++) {
+        hoc_call_func(fadvance, 0);    
+    }
+
+    for (auto sec: all_sec) {
+        print_3d_points_and_segs(sec);
+    }
 }
