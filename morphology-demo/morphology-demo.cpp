@@ -133,6 +133,7 @@ void set_length(Section* sec, double length) {
 }
 
 void set_node_diam(Node* node, double diam) {
+    // TODO: this is fine if no 3D points; does it work if there are 3D points?
     for (auto prop = node->prop; prop; prop=prop->next) {
         if (prop->_type == MORPHOLOGY) {
             prop->param[0] = diam;
