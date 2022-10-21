@@ -30,8 +30,11 @@ vsecptr_function nrn_pushsec;
 secptrv_function nrn_sec_pop;
 cptrsecptr_function secname;
 dv_function hoc_xpop;
-iv_function hoc_ipop;
 dptrsecptrsptrd_function nrn_rangepointer;
+int* diam_changed;
+vsecptrd_function nrn_length_change;
+nptrsecptrd_function node_exact;
+
 
 Object* new_vector_record(double* record) {
     // create a new Vector
@@ -131,14 +134,55 @@ double diam3d(Section* sec, int i) {
     return sec->pt3d[i].d;
 }
 
+void set_length(Section* sec, double length) {
+    // in NEURON code, there's also a check for can_change_morph(sec)... that checks pt3dconst_
+    sec->prop->dparam[2].val = length;
+    // dparam[7].val is for Ra
+    // nrn_length_change updates 3D points if needed
+    nrn_length_change(sec, length);
+    *diam_changed = 1;
+    sec->recalc_area_ = 1;
+}
 
-void print_3d_points(Section* sec) {
+void set_node_diam(Node* node, double diam) {
+    for (auto prop = node->prop; prop; prop=prop->next) {
+        if (prop->_type == MORPHOLOGY) {
+            prop->param[0] = diam;
+            *diam_changed = 1;
+            node->sec->recalc_area_ = 1;
+            break;
+        }
+    }
+}
+
+void set_diameter(Section* sec, double diam) {
+    double my_nseg = nseg(sec);
+    // grab each node (segment), then set the diam there
+    for (auto i = 0; i < my_nseg; i++) {
+        double x = (i + 0.5) / my_nseg;
+        Node* node = node_exact(sec, x);
+        set_node_diam(node, diam);
+    }
+}
+
+
+void print_3d_points_and_segs(Section* sec) {
+    double my_nseg = nseg(sec);
+    Symbol* v = hoc_lookup("v");
     cout << secname(sec) << " has " << nseg(sec) << " segments and " << n3d(sec) << " 3d points:" << endl;
+    // print out 3D points
     for (auto i = 0; i < n3d(sec); i++) {
         cout << "    (" << x3d(sec, i) << ", " << y3d(sec, i) << ", "<< z3d(sec, i) 
              << "; "<< diam3d(sec, i) << ")" << endl;
     }
-    // TODO: demo using e.g. nrn_rangepointer(axon, hoc_lookup("v"), 0.5) to grab each segments voltages
+    // print out membrane potential for each segment
+    // grab each node (segment), then set the diam there
+    for (auto i = 0; i < my_nseg; i++) {
+        double x = (i + 0.5) / my_nseg;
+        Node* node = node_exact(sec, x);
+        cout << "    " << secname(sec) << "(" << x << ").v = " << *nrn_rangepointer(sec, v, x) << endl;
+    }
+    cout << endl;
 }
 
 int main(void) {
@@ -230,8 +274,16 @@ int main(void) {
     hoc_xpop = (dv_function) dlsym(handle, "hoc_xpop");
     assert(hoc_xpop);
     
-    hoc_ipop = (iv_function) dlsym(handle, "hoc_ipop");
-    assert(hoc_ipop);
+    diam_changed = (int*) dlsym(handle, "diam_changed");
+    assert(diam_changed);
+
+    nrn_length_change = (vsecptrd_function) dlsym(handle, "_Z17nrn_length_changeP7Sectiond");
+    assert(nrn_length_change);
+
+    node_exact = (nptrsecptrd_function) dlsym(handle, "node_exact");
+    assert(node_exact);
+
+
 
     /***************************
      * 
@@ -279,16 +331,13 @@ int main(void) {
     pt3dadd(main, 1, 2, 3, 4);
     pt3dadd(main, 21, 2, 3, 1);
 
-    // using HOC to set abstract morphology info for branches
-    nrn_pushsec(branch1);
-    hoc_oc("L = 10");
-    hoc_oc("diam = 1");
-    nrn_sec_pop();
+    // set abstract morphology info for branches (i.e. we're just setting L and
+    // diam but not specifying the 3D points
+    set_length(branch1, 10);
+    set_diameter(branch1, 1);
 
-    nrn_pushsec(branch2);
-    hoc_oc("L = 10");
-    hoc_oc("diam = 1");
-    nrn_sec_pop();
+    set_length(branch2, 11);
+    set_diameter(branch2, 0.9);
 
     // constructing 3D points for everything remaining (the branches)
     hoc_call_func(hoc_lookup("define_shape"), 0);
@@ -296,7 +345,7 @@ int main(void) {
     cout << endl << "Topology after setting morphology (should be unchanged):" << endl;
     hoc_call_func(hoc_lookup("topology"), 0); 
 
-    print_3d_points(main);
-    print_3d_points(branch1);
-    print_3d_points(branch2);
+    print_3d_points_and_segs(main);
+    print_3d_points_and_segs(branch1);
+    print_3d_points_and_segs(branch2);
 }

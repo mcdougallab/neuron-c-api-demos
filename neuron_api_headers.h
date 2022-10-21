@@ -295,6 +295,11 @@ typedef struct Point_process {
 } Point_process;
 
 
+// constants from src/nrnoc/membfunc.h
+#define CABLESECTION 1
+#define MORPHOLOGY   2
+#define CAP          3
+
 typedef void (*initer_function)(int, const char**, const char**, int);
 typedef void (*vd_function)(double);
 typedef void (*vdptr_function)(double*);
@@ -324,3 +329,5 @@ typedef Section* (*secptrv_function)(void);
 typedef double* (*dptrsecptrsptrd_function)(Section*, Symbol*, double);
 typedef void (*vsecptri_function)(Section*, int);
 typedef Point_process* (*ppoptr_function)(Object*);
+typedef void (*vsecptrd_function)(Section*, double);
+typedef Node* (*nptrsecptrd_function)(Section*, double);
