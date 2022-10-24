@@ -58,6 +58,8 @@ Section* new_section(const char* name) {
     strcpy(name_ptr, name);
     symbol->name = name_ptr;
     symbol->type = 1;
+    symbol->u.oboff = 0;
+    symbol->arayinfo = 0;
     hoc_install_object_data_index(symbol);
     new_sections(nullptr, symbol, pitm, 1);
     return (*pitm)->element.sec;
