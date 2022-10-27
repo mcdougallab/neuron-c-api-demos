@@ -37,7 +37,7 @@ void finitialize(double v0) {
 
 Section* new_section(const char* name) {
     Symbol* symbol = new Symbol;
-    auto pitm = (hoc_Item**) malloc(sizeof(hoc_Item*));  // new hoc_Item*;  
+    auto pitm = new hoc_Item*;  
     char* name_ptr = new char[strlen(name)];
     strcpy(name_ptr, name);
     symbol->name = name_ptr;
