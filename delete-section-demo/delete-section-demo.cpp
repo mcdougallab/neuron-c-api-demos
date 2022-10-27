@@ -25,7 +25,8 @@ secptrv_function nrn_sec_pop;
 vsptr_function hoc_install_object_data_index;
 vv_function delete_section;
 dv_function hoc_xpop;
-
+Objectdata** hoc_top_level_data;
+icptr_function hoc_oc;
 
 
 void finitialize(double v0) {
@@ -36,21 +37,35 @@ void finitialize(double v0) {
 
 Section* new_section(const char* name) {
     Symbol* symbol = new Symbol;
-    auto pitm = new hoc_Item*;
+    auto pitm = (hoc_Item**) malloc(sizeof(hoc_Item*));  // new hoc_Item*;  
     char* name_ptr = new char[strlen(name)];
     strcpy(name_ptr, name);
     symbol->name = name_ptr;
-    symbol->type = 1;
-    symbol->u.oboff = 0;
+    symbol->type = 308;
     symbol->arayinfo = 0;    
     hoc_install_object_data_index(symbol);
+    cout << name << " oboff: " << symbol->u.oboff << endl;
+    (*hoc_top_level_data)[symbol->u.oboff].psecitm = pitm;
     new_sections(nullptr, symbol, pitm, 1);
+    /*
+    for (auto i = 0; i < 11; i++) {
+        cout << "    " << i << ": " << (*pitm)->element.sec->prop->dparam[i].val << endl;
+    }
+    cout << "    prop->next: " << (*pitm)->element.sec->prop->next << endl;
+    */
     return (*pitm)->element.sec;
 }
 
 
 void topology(void) {
     hoc_call_func(hoc_lookup("topology"), 0);
+}
+
+void my_delete_section(Section* sec) {
+    nrn_pushsec(sec);
+    //delete_section();
+    hoc_oc("delete_section()");
+    nrn_sec_pop();
 }
 
 
@@ -103,9 +118,14 @@ int main(void) {
     delete_section = (vv_function) dlsym(handle, "_Z14delete_sectionv");
     assert(delete_section);
 
+    hoc_top_level_data = (Objectdata**) dlsym(handle, "hoc_top_level_data");
+    assert(hoc_top_level_data);
+
     hoc_install_object_data_index = (vsptr_function) dlsym(handle, "hoc_install_object_data_index");
     assert(hoc_install_object_data_index);
 
+    hoc_oc = (icptr_function) dlsym(handle, "hoc_oc");
+    assert(hoc_oc);
 
 
     /***************************
@@ -136,12 +156,38 @@ int main(void) {
     auto branch1 = new_section("branch1");
     auto branch2 = new_section("branch2");
 
+    cout << "Currently accessed section: ";
+    hoc_oc("secname()");
+
     cout << "Initial topology:" << endl;
     topology();
 
-    cout << main->prop->dparam << endl;
-    delete_section();
+    /*
+    for (auto i = 0; i < 11; i++) {
+        cout << "    main->prop->dparam[" << i << "]: " << main->prop->dparam[i].val << endl;
+    }
+    cout << "    prop->next: " << main->prop->next << endl;
+    */
+    //delete_section();
 
-    cout << "Topology after deleting branch 1:" << endl;
+    cout << "Topology after deleting branch1:" << endl;
+    my_delete_section(branch1);
+
+    topology();
+
+
+    cout << "Topology after deleting branch2:" << endl;
+    my_delete_section(branch2);
+
+    topology();
+
+    // topology is apparently unhappy if the only thing that remains is a deleted section
+    // so let's give it something else
+    auto foo = new_section("foo");
+
+    cout << "Topology after adding foo and deleting main:" << endl;
+    
+    my_delete_section(main);
+
     topology();
 }
