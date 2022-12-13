@@ -187,6 +187,11 @@ int main(void) {
     oc_restore_cabcode = (cabcode_ss) dlsym(handle, "_Z18oc_restore_cabcodePiS_");
     assert(oc_restore_cabcode);
 
+    auto hoc_objpop = (optrptr_function) dlsym(handle, "_Z10hoc_objpopv");
+    assert(hoc_objpop);
+
+    auto hoc_tobj_unref = (vobjptrptr_function) dlsym(handle, "_Z14hoc_tobj_unrefPP6Object");
+    assert(hoc_tobj_unref);
 
     /***************************
      * 
@@ -221,7 +226,9 @@ int main(void) {
     auto indgen = hoc_table_lookup("indgen", vec->ctemplate->symtable);
     cout << "vec.indgen()" << endl;
     call_ob_proc(vec, indgen, 0);
-    cout << "vec->refcount: " << vec->refcount << " <-- question: why did the refcount increase here but not below?" << endl;
+    // NOTE: indgen returns a vector, so we need to get the return and unref it (since we're not storing it)
+    hoc_tobj_unref(hoc_objpop());
+    cout << "vec->refcount: " << vec->refcount << endl;
 
     /***************************
      * correctly call contains
@@ -308,15 +315,8 @@ int main(void) {
 
     cout << "hoc_obj_unref(vec)" << endl;
     hoc_obj_unref(vec);
-    cout << "vec->refcount: " << vec->refcount << endl;
 
-
-    hoc_oc(
-        "print \"Number of Vectors: \", veclist.count(), \"<--- question: why is vec still around????\"\n"
-    );
-
-    cout << "hoc_obj_unref(vec)" << endl;
-    hoc_obj_unref(vec);
+    // DO NOT USE vec AFTER THIS POINT; IT WILL HAVE BEEN GARBAGE COLLECTED
 
     hoc_oc(
         "print \"Number of Vectors: \", veclist.count()\n"
