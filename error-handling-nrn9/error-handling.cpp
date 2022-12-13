@@ -127,12 +127,15 @@ int main(void) {
     cout << "vec = Vector(5)" << endl;
     auto vec = hoc_newobj1(sym, 1);
 
+    cout << "vec->refcount: " << vec->refcount << endl;
+
     /***************************
      * call vec.indgen()... leaves vec: 0, 1, 2, 3, 4
      **************************/
     auto indgen = hoc_table_lookup("indgen", vec->ctemplate->symtable);
     cout << "vec.indgen()" << endl;
     call_ob_proc(vec, indgen, 0);
+    cout << "vec->refcount: " << vec->refcount << " <-- question: why did the refcount increase here but not below?" << endl;
 
     /***************************
      * correctly call contains
@@ -143,6 +146,7 @@ int main(void) {
         call_ob_proc(vec, contains, 1);
         cout << "vec.contains(" << i << ") = " << hoc_xpop() << endl;
     }
+    cout << "vec->refcount: " << vec->refcount << endl;
 
     /***************************
      * incorrectly call contains (not enough args)
@@ -153,6 +157,7 @@ int main(void) {
         call_ob_proc(vec, contains, 0);
     } catch (...) {
         cout << "Uh oh. An error occurred." << endl;
+        cout << "vec->refcount: " << vec->refcount << endl;
     }
     (*nrn_try_catch_nest_depth)--;
 
@@ -166,6 +171,7 @@ int main(void) {
         call_ob_proc(vec, contains, 0);
     } catch (...) {
         cout << "Uh oh. An error occurred." << endl;
+        cout << "vec->refcount: " << vec->refcount << endl;
     }
     (*nrn_try_catch_nest_depth)--;
 
@@ -175,6 +181,7 @@ int main(void) {
     hoc_pushx(3);
     call_ob_proc(vec, contains, 1);
     cout << "vec.contains(3) = " << hoc_xpop() << endl;
+    cout << "vec->refcount: " << vec->refcount << endl;
 
     /***************************
      * create new Vector and correctly call contains
