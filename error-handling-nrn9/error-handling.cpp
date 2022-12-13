@@ -195,6 +195,13 @@ int main(void) {
     call_ob_proc(vec2, contains, 1);
     cout << "vec2.contains(3) = " << hoc_xpop() << endl;
 
+    try {
+        cout << "vec2.contains()" << endl;
+        call_ob_proc(vec2, contains, 0);
+    } catch (...) {
+        cout << "Uh oh. An error occurred." << endl;
+    }
+
     hoc_oc(
         "objref veclist\n"
         "veclist = new List(\"Vector\")\n"
