@@ -26,12 +26,74 @@ vsptr_function hoc_install_object_data_index;
 voptrsptritemptrptri_function new_sections;
 ppoptr_function ob2pntproc_0;
 
+typedef void (*hoc_oop_ss)(Object**, Objectdata**, int*, Symlist**);
+typedef void (*code_ss)(Inst**, Inst**, std::size_t&, void**, int*, int*, Inst**, void**, std::size_t&, Symlist**, Inst**, int*);
+typedef void (*input_info_ss)(const char**, int*, int*, void**);
+typedef void (*input_info_rs)(const char*, int, int, void*);
+typedef void (*cabcode_ss)(int*, int*);
+
+hoc_oop_ss oc_save_hoc_oop, oc_restore_hoc_oop;
+code_ss oc_save_code, oc_restore_code;
+input_info_ss oc_save_input_info;
+input_info_rs oc_restore_input_info;
+cabcode_ss oc_save_cabcode, oc_restore_cabcode;
+
+// adapted from ocjump.cpp
+class SavedState {
+    public:
+        SavedState() {
+            // not complete but it is good for expressions and it can be improved
+            oc_save_hoc_oop(&o1, &o2, &o4, &o5);
+            oc_save_code(&c1, &c2, c3, &c4, &c5, &c6, &c7, &c8, c9, &c10, &c11, &c12);
+            oc_save_input_info(&i1, &i2, &i3, &i4);
+            oc_save_cabcode(&cc1, &cc2);
+        }
+
+        void restore() {
+            oc_restore_hoc_oop(&o1, &o2, &o4, &o5);
+            oc_restore_code(&c1, &c2, c3, &c4, &c5, &c6, &c7, &c8, c9, &c10, &c11, &c12);
+            oc_restore_input_info(i1, i2, i3, i4);
+            oc_restore_cabcode(&cc1, &cc2);
+        }
+
+    private:
+        // hoc_oop
+        Object* o1;
+        Objectdata* o2;
+        int o4;
+        Symlist* o5;
+
+        // code
+        Inst* c1;
+        Inst* c2;
+        std::size_t c3;
+        void* c4;
+        int c5;
+        int c6;
+        Inst* c7;
+        void* c8;
+        std::size_t c9;
+        Symlist* c10;
+        Inst* c11;
+        int c12;
+
+        // input_info
+        const char* i1;
+        int i2;
+        int i3;
+        void* i4;
+
+        // cabcode
+        int cc1;
+        int cc2;
+};
 
 int main(void) {
     Symbol* sym;
     char* error;
     int oboff;
     void* handle = dlopen("libnrniv.dylib", RTLD_NOW | RTLD_LOCAL); 
+    SavedState* state;
     if (!handle) {
         cout << "Couldn't open dylib." << endl << dlerror() << endl;
         exit(-1);
@@ -101,6 +163,30 @@ int main(void) {
     int* nrn_try_catch_nest_depth = (int*) dlsym(handle, "nrn_try_catch_nest_depth");
     assert(nrn_try_catch_nest_depth);
 
+    oc_save_hoc_oop = (hoc_oop_ss) dlsym(handle, "_Z15oc_save_hoc_oopPP6ObjectPP10ObjectdataPiPP7Symlist");
+    assert(oc_save_hoc_oop);
+
+    oc_restore_hoc_oop = (hoc_oop_ss) dlsym(handle, "_Z18oc_restore_hoc_oopPP6ObjectPP10ObjectdataPiPP7Symlist");
+    assert(oc_restore_hoc_oop);
+
+    oc_save_code = (code_ss) dlsym(handle, "_Z12oc_save_codePP4InstS1_RmPPN3nrn2oc5frameEPiS8_S1_S7_S2_PP7SymlistS1_S8_");
+    assert(oc_save_code);
+
+    oc_restore_code = (code_ss) dlsym(handle, "_Z15oc_restore_codePP4InstS1_RmPPN3nrn2oc5frameEPiS8_S1_S7_S2_PP7SymlistS1_S8_");
+    assert(oc_restore_code);
+
+    oc_save_input_info = (input_info_ss) dlsym(handle, "_Z18oc_save_input_infoPPKcPiS2_PP7__sFILE");
+    assert(oc_save_input_info);
+
+    oc_restore_input_info = (input_info_rs) dlsym(handle, "_Z21oc_restore_input_infoPKciiP7__sFILE");
+    assert(oc_restore_input_info);
+
+    oc_save_cabcode = (cabcode_ss) dlsym(handle, "_Z15oc_save_cabcodePiS_");
+    assert(oc_save_cabcode);
+
+    oc_restore_cabcode = (cabcode_ss) dlsym(handle, "_Z18oc_restore_cabcodePiS_");
+    assert(oc_restore_cabcode);
+
 
     /***************************
      * 
@@ -153,12 +239,16 @@ int main(void) {
      **************************/
     (*nrn_try_catch_nest_depth)++;
     cout << "vec.contains();  [nrn_try_catch_nest_depth = "<< *nrn_try_catch_nest_depth << "]" << endl;
+    state = new SavedState();
     try {
         call_ob_proc(vec, contains, 0);
     } catch (...) {
+        state->restore();
         cout << "Uh oh. An error occurred." << endl;
         cout << "vec->refcount: " << vec->refcount << endl;
     }
+    delete state;
+
     (*nrn_try_catch_nest_depth)--;
 
 
@@ -167,12 +257,15 @@ int main(void) {
      **************************/
     (*nrn_try_catch_nest_depth)++;
     cout << "vec.contains();  [nrn_try_catch_nest_depth = "<< *nrn_try_catch_nest_depth << "]" << endl;
+    state = new SavedState();
     try {
         call_ob_proc(vec, contains, 0);
     } catch (...) {
+        state->restore();
         cout << "Uh oh. An error occurred." << endl;
         cout << "vec->refcount: " << vec->refcount << endl;
     }
+    delete state;
     (*nrn_try_catch_nest_depth)--;
 
     /***************************
@@ -195,12 +288,15 @@ int main(void) {
     call_ob_proc(vec2, contains, 1);
     cout << "vec2.contains(3) = " << hoc_xpop() << endl;
 
+    state = new SavedState();
     try {
         cout << "vec2.contains()" << endl;
         call_ob_proc(vec2, contains, 0);
     } catch (...) {
+        state->restore();
         cout << "Uh oh. An error occurred." << endl;
     }
+    delete state;
 
     hoc_oc(
         "objref veclist\n"
@@ -208,8 +304,12 @@ int main(void) {
         "print \"Number of Vectors: \", veclist.count()\n"
     );
 
+    cout << "vec->refcount: " << vec->refcount << endl;
+
     cout << "hoc_obj_unref(vec)" << endl;
     hoc_obj_unref(vec);
+    cout << "vec->refcount: " << vec->refcount << endl;
+
 
     hoc_oc(
         "print \"Number of Vectors: \", veclist.count(), \"<--- question: why is vec still around????\"\n"
@@ -224,11 +324,14 @@ int main(void) {
 
     //hoc_pushx(3);
     (*nrn_try_catch_nest_depth)++;
-    cout << "vec2.contains();  [nrn_try_catch_nest_depth = "<< *nrn_try_catch_nest_depth << "] <--- question: this segfaults; why????" << endl;
+    cout << "vec2.contains();  [nrn_try_catch_nest_depth = "<< *nrn_try_catch_nest_depth << "]" << endl;
+    state = new SavedState();
     try {
         call_ob_proc(vec2, contains, 0);
     } catch (...) {
+        state->restore();
         cout << "Uh oh. An error occurred." << endl;
     }
+    delete state;
     (*nrn_try_catch_nest_depth)--;
 }
