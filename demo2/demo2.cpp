@@ -96,21 +96,39 @@ int main(void) {
     *((int64_t*) dlsym(handle, "nrn_main_launch")) = 0;
 
     hoc_lookup = (scptr_function) dlsym(handle, "hoc_lookup");
+    if (!hoc_lookup) {
+        hoc_lookup = (scptr_function) dlsym(handle, "_Z10hoc_lookupPKc");
+    }
     assert(hoc_lookup);
 
     hoc_table_lookup = (scptrslptr_function) dlsym(handle, "hoc_table_lookup");
+    if (!hoc_table_lookup) {
+        hoc_table_lookup = (scptrslptr_function) dlsym(handle, "_Z16hoc_table_lookupPKcP7Symlist");
+    }
     assert(hoc_table_lookup);
 
     hoc_call_func = (dvptrint_function) dlsym(handle, "hoc_call_func");
+    if (!hoc_call_func) {
+        hoc_call_func = (dvptrint_function) dlsym(handle, "_Z13hoc_call_funcP6Symboli");
+    }
     assert(hoc_call_func);
 
     auto hoc_oc = (icptr_function) dlsym(handle, "hoc_oc");
+    if (!hoc_oc) {
+        hoc_oc = (icptr_function) dlsym(handle, "_Z6hoc_ocPKc");
+    }
     assert(hoc_oc);
 
     hoc_pushx = (vd_function) dlsym(handle, "hoc_pushx");
+    if (!hoc_pushx) {
+        hoc_pushx = (vd_function) dlsym(handle, "_Z9hoc_pushxd");
+    }
     assert(hoc_pushx);
 
     hoc_pushpx = (vdptr_function) dlsym(handle, "hoc_pushpx");
+    if (!hoc_pushpx) {
+        hoc_pushpx = (vdptr_function) dlsym(handle, "_Z10hoc_pushpxPd");
+    }
     assert(hoc_pushpx);
 
     auto nrnmpi_stubs = (vv_function) dlsym(handle, "_Z12nrnmpi_stubsv");
@@ -120,15 +138,27 @@ int main(void) {
     assert(hoc_newobj1);
 
     auto vector_capacity = (ivptr_function) dlsym(handle, "vector_capacity");
+    if (!vector_capacity) {
+        vector_capacity = (ivptr_function) dlsym(handle, "_Z15vector_capacityPv");
+    }
     assert(vector_capacity);
 
     auto vector_vec = (dptrvptr_function) dlsym(handle, "vector_vec");
+    if (!vector_vec) {
+        vector_vec = (dptrvptr_function) dlsym(handle, "_Z10vector_vecPv");
+    }
     assert(vector_vec);
 
     call_ob_proc = (voptrsptri_function) dlsym(handle, "hoc_call_ob_proc");
+    if (!call_ob_proc) {
+        call_ob_proc = (voptrsptri_function) dlsym(handle, "_Z16hoc_call_ob_procP6ObjectP6Symboli");
+    }
     assert(call_ob_proc);
 
     hoc_install_object_data_index = (vsptr_function) dlsym(handle, "hoc_install_object_data_index");
+    if (!hoc_install_object_data_index) {
+        hoc_install_object_data_index = (vsptr_function) dlsym(handle, "_Z29hoc_install_object_data_indexP6Symbol");
+    }
     assert(hoc_install_object_data_index);
 
     new_sections = (voptrsptritemptrptri_function) dlsym(handle, "_Z12new_sectionsP6ObjectP6SymbolPP8hoc_Itemi");
@@ -141,6 +171,9 @@ int main(void) {
     assert(mech_insert1);
 
     ob2pntproc_0 = (ppoptr_function) dlsym(handle, "ob2pntproc_0");
+    if (!ob2pntproc_0) {
+        ob2pntproc_0 = (ppoptr_function) dlsym(handle, "_Z12ob2pntproc_0P6Object");
+    }
     assert(ob2pntproc_0);
 
 
