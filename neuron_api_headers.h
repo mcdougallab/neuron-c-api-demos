@@ -318,6 +318,7 @@ typedef void (*voptr_function) (Object*);
 typedef void (*vf2icif_function)(int (*)(int, char*), int(*)());
 typedef int (*ivptr_function)(void*);
 typedef double* (*dptrvptr_function)(void*);
+typedef double* (*dptrv_function)(void);
 typedef double (*dv_function)(void);
 typedef int (*iv_function)(void);
 typedef void (*voptrsptri_function)(Object*, Symbol*, int);
