@@ -334,3 +334,4 @@ typedef Point_process* (*ppoptr_function)(Object*);
 typedef void (*vsecptrd_function)(Section*, double);
 typedef Node* (*nptrsecptrd_function)(Section*, double);
 typedef void (*vobjptrptr_function)(Object**);
+typedef void (*vitemptr_function)(hoc_Item*);
