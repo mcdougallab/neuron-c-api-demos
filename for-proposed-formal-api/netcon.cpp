@@ -57,6 +57,7 @@ int main(void) {
     // nc.record(vec)
     nrn_push_object(vec);
     nrn_call_method(nc, nrn_get_method_symbol(nc, "record"), 1);
+    // TODO: record probably put something on the stack that should be removed
 
     // setup recording
     v = nrn_new_object(nrn_get_symbol("Vector"), 0);
