@@ -38,6 +38,8 @@ char const *(*nrn_secname)(Section *sec);
 void (*nrn_push_section)(Section *sec);
 void (*nrn_pop_section)(void);
 void (*nrn_insert_mechanism)(Section *sec, Symbol *mechanism);
+hoc_Item* (*nrn_get_allsec)(void);
+hoc_Item* (*nrn_get_sectionlist_data)(Object* obj);
 
 /****************************************
  * Segments
@@ -122,6 +124,10 @@ void setup_neuron_api(void) {
     assert(nrn_pop_section);
     nrn_insert_mechanism = reinterpret_cast<decltype(nrn_insert_mechanism)>(dlsym(handle, "nrn_insert_mechanism")); 
     assert(nrn_insert_mechanism);
+    nrn_get_allsec = reinterpret_cast<decltype(nrn_get_allsec)>(dlsym(handle, "nrn_get_allsec")); 
+    assert(nrn_get_allsec);
+    nrn_get_sectionlist_data = reinterpret_cast<decltype(nrn_get_sectionlist_data)>(dlsym(handle, "nrn_get_sectionlist_data")); 
+    assert(nrn_get_sectionlist_data);
 
 
     /****************************************

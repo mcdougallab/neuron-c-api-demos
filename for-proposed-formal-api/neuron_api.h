@@ -28,6 +28,8 @@ extern char const *(*nrn_secname)(Section *sec);
 extern void (*nrn_push_section)(Section *sec);
 extern void (*nrn_pop_section)(void);
 extern void (*nrn_insert_mechanism)(Section *sec, Symbol *mechanism);
+extern hoc_Item* (*nrn_get_allsec)(void);
+extern hoc_Item* (*nrn_get_sectionlist_data)(Object* obj);
 
 /****************************************
  * Segments
