@@ -7,6 +7,8 @@ struct Object;
 struct Section;
 struct SectionListIterator;
 struct hoc_Item;
+struct SymbolTableIterator;
+struct Symlist;
 
 /****************************************
  * Initialization
@@ -61,6 +63,7 @@ extern Symbol *(*nrn_get_method_symbol)(Object *obj, char const *const name);
 extern void (*nrn_call_method)(Object *obj, Symbol *method_sym, int narg);
 extern void (*nrn_call_function)(Symbol *sym, int narg);
 extern void (*nrn_unref_object)(Object *obj);
+extern char const * (*nrn_get_class_name)(Object* obj);
 
 /****************************************
  * Miscellaneous
@@ -70,9 +73,19 @@ extern SectionListIterator *(*nrn_new_sectionlist_iterator)(hoc_Item *my_section
 extern void (*nrn_free_sectionlist_iterator)(SectionListIterator *sl);
 extern Section *(*nrn_sectionlist_iterator_next)(SectionListIterator* sl);
 extern int (*nrn_sectionlist_iterator_done)(SectionListIterator* sl);
+extern SymbolTableIterator *(*nrn_new_symbol_table_iterator)(Symlist *my_symbol_table);
+extern void (*nrn_free_symbol_table_iterator)(SymbolTableIterator *st);
+extern char const *(*nrn_symbol_table_iterator_next)(SymbolTableIterator *st);
+extern int (*nrn_symbol_table_iterator_done)(SymbolTableIterator *st);
 extern int (*nrn_vector_capacity)(Object *vec);
 extern double *(*nrn_vector_data_ptr)(Object *vec);
 extern double* (*nrn_get_pp_property_ptr)(Object* pp, const char* name);
 extern double* (*nrn_get_steered_property_ptr)(Object* obj, const char* name);
+extern char const * (*nrn_get_symbol_name)(Symbol* sym);
+extern Symlist * (*nrn_get_symbol_table)(Symbol* sym);
+extern Symlist * (*nrn_get_global_symbol_table)(void);
+
+
+
 
 void setup_neuron_api(void);

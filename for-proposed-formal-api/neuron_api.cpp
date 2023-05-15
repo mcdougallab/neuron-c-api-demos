@@ -13,6 +13,8 @@ struct Object;
 struct Section;
 struct SectionListIterator;
 struct hoc_Item;
+struct SymbolTableIterator;
+struct Symlist;
 
 // TODO: should this be here or part of every program instead?
 extern "C" void modl_reg() {};
@@ -71,6 +73,7 @@ Symbol *(*nrn_get_method_symbol)(Object *obj, char const *const name);
 void (*nrn_call_method)(Object *obj, Symbol *method_sym, int narg);
 void (*nrn_call_function)(Symbol *sym, int narg);
 void (*nrn_unref_object)(Object *obj);
+char const * (*nrn_get_class_name)(Object* obj);
 
 /****************************************
  * Miscellaneous
@@ -80,11 +83,17 @@ SectionListIterator *(*nrn_new_sectionlist_iterator)(hoc_Item *my_sectionlist);
 void (*nrn_free_sectionlist_iterator)(SectionListIterator *sl);
 Section *(*nrn_sectionlist_iterator_next)(SectionListIterator* sl);
 int (*nrn_sectionlist_iterator_done)(SectionListIterator* sl);
+SymbolTableIterator *(*nrn_new_symbol_table_iterator)(Symlist *my_symbol_table);
+void (*nrn_free_symbol_table_iterator)(SymbolTableIterator *st);
+char const *(*nrn_symbol_table_iterator_next)(SymbolTableIterator *st);
+int (*nrn_symbol_table_iterator_done)(SymbolTableIterator *st);
 int (*nrn_vector_capacity)(Object *vec);
 double *(*nrn_vector_data_ptr)(Object *vec);
 double* (*nrn_get_pp_property_ptr)(Object* pp, const char* name);
 double* (*nrn_get_steered_property_ptr)(Object* obj, const char* name);
-
+char const * (*nrn_get_symbol_name)(Symbol* sym);
+Symlist * (*nrn_get_symbol_table)(Symbol* sym);
+Symlist * (*nrn_get_global_symbol_table)(void);
 
 void setup_neuron_api(void) {
     void* handle = dlopen("libnrniv.dylib", RTLD_NOW | RTLD_LOCAL); 
@@ -184,7 +193,8 @@ void setup_neuron_api(void) {
     assert(nrn_call_function);
     nrn_unref_object = reinterpret_cast<decltype(nrn_unref_object)>(dlsym(handle, "nrn_unref_object")); 
     assert(nrn_unref_object);
-
+    nrn_get_class_name = reinterpret_cast<decltype(nrn_get_class_name)>(dlsym(handle, "nrn_get_class_name")); 
+    assert(nrn_get_class_name);
 
     /****************************************
      * Miscellaneous
@@ -199,6 +209,14 @@ void setup_neuron_api(void) {
     assert(nrn_sectionlist_iterator_next);
     nrn_sectionlist_iterator_done = reinterpret_cast<decltype(nrn_sectionlist_iterator_done)>(dlsym(handle, "nrn_sectionlist_iterator_done"));     
     assert(nrn_sectionlist_iterator_done);
+    nrn_new_symbol_table_iterator = reinterpret_cast<decltype(nrn_new_symbol_table_iterator)>(dlsym(handle, "nrn_new_symbol_table_iterator"));     
+    assert(nrn_new_symbol_table_iterator);
+    nrn_free_symbol_table_iterator = reinterpret_cast<decltype(nrn_free_symbol_table_iterator)>(dlsym(handle, "nrn_free_symbol_table_iterator"));     
+    assert(nrn_free_symbol_table_iterator);
+    nrn_symbol_table_iterator_next = reinterpret_cast<decltype(nrn_symbol_table_iterator_next)>(dlsym(handle, "nrn_symbol_table_iterator_next"));
+    assert(nrn_symbol_table_iterator_next);
+    nrn_symbol_table_iterator_done = reinterpret_cast<decltype(nrn_symbol_table_iterator_done)>(dlsym(handle, "nrn_symbol_table_iterator_done"));
+    assert(nrn_symbol_table_iterator_done);
     nrn_vector_capacity = reinterpret_cast<decltype(nrn_vector_capacity)>(dlsym(handle, "nrn_vector_capacity"));     
     assert(nrn_vector_capacity);
     nrn_vector_data_ptr = reinterpret_cast<decltype(nrn_vector_data_ptr)>(dlsym(handle, "nrn_vector_data_ptr"));     
@@ -207,5 +225,10 @@ void setup_neuron_api(void) {
     assert(nrn_get_pp_property_ptr);
     nrn_get_steered_property_ptr = reinterpret_cast<decltype(nrn_get_steered_property_ptr)>(dlsym(handle, "nrn_get_steered_property_ptr"));     
     assert(nrn_get_steered_property_ptr);
-
+    nrn_get_symbol_name = reinterpret_cast<decltype(nrn_get_symbol_name)>(dlsym(handle, "nrn_get_symbol_name"));     
+    assert(nrn_get_symbol_name);
+    nrn_get_symbol_table = reinterpret_cast<decltype(nrn_get_symbol_table)>(dlsym(handle, "nrn_get_symbol_table"));     
+    assert(nrn_get_symbol_table);
+    nrn_get_global_symbol_table = reinterpret_cast<decltype(nrn_get_global_symbol_table)>(dlsym(handle, "nrn_get_global_symbol_table"));
+    assert(nrn_get_global_symbol_table);
 }

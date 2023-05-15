@@ -3,7 +3,6 @@
 
 using std::cout;
 using std::endl;
-using std::ofstream;
 
 static const char* argv[] = {"hh_sim", "-nogui", "-nopython", nullptr};
 
