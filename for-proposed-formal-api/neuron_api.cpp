@@ -65,6 +65,7 @@ void (*nrn_push_str)(char **str);
 char **(*nrn_pop_str)(void);
 void (*nrn_push_int)(int i);
 int (*nrn_pop_int)(void);
+void (*nrn_push_object)(Object* obj);
 Object *(*nrn_pop_object)(void);
 int (*nrn_stack_type)(void);
 char const *const (*nrn_stack_type_name)(int id);
@@ -72,6 +73,7 @@ Object *(*nrn_new_object)(Symbol *sym, int narg);
 Symbol *(*nrn_get_method_symbol)(Object *obj, char const *const name);
 void (*nrn_call_method)(Object *obj, Symbol *method_sym, int narg);
 void (*nrn_call_function)(Symbol *sym, int narg);
+void (*nrn_ref_object)(Object *obj);
 void (*nrn_unref_object)(Object *obj);
 char const * (*nrn_get_class_name)(Object* obj);
 
@@ -177,6 +179,8 @@ void setup_neuron_api(void) {
     assert(nrn_push_int);
     nrn_pop_int = reinterpret_cast<decltype(nrn_pop_int)>(dlsym(handle, "nrn_pop_int")); 
     assert(nrn_pop_int);
+    nrn_push_object = reinterpret_cast<decltype(nrn_push_object)>(dlsym(handle, "nrn_push_object")); 
+    assert(nrn_push_object);
     nrn_pop_object = reinterpret_cast<decltype(nrn_pop_object)>(dlsym(handle, "nrn_pop_object")); 
     assert(nrn_pop_object);
     nrn_stack_type = reinterpret_cast<decltype(nrn_stack_type)>(dlsym(handle, "nrn_stack_type")); 
@@ -193,6 +197,8 @@ void setup_neuron_api(void) {
     assert(nrn_call_function);
     nrn_unref_object = reinterpret_cast<decltype(nrn_unref_object)>(dlsym(handle, "nrn_unref_object")); 
     assert(nrn_unref_object);
+    nrn_ref_object = reinterpret_cast<decltype(nrn_ref_object)>(dlsym(handle, "nrn_ref_object")); 
+    assert(nrn_ref_object);
     nrn_get_class_name = reinterpret_cast<decltype(nrn_get_class_name)>(dlsym(handle, "nrn_get_class_name")); 
     assert(nrn_get_class_name);
 

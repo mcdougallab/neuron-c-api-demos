@@ -16,7 +16,7 @@ endif
 
 # TODO: handle Windows (mingw?)
 
-all: helloworld hh_sim vclamp sections introspection
+all: helloworld hh_sim vclamp sections introspection netcon
 
 helloworld: helloworld.cpp neuron_api.o neuron_api.h
 	$(CXX) $(CXXFLAGS) helloworld.cpp neuron_api.o -o helloworld
@@ -35,3 +35,6 @@ sections: sections.cpp neuron_api.o neuron_api.h
 
 introspection: introspection.cpp neuron_api.o neuron_api.h
 	$(CXX) $(CXXFLAGS) introspection.cpp neuron_api.o -o introspection
+
+netcon: netcon.cpp neuron_api.o neuron_api.h
+	$(CXX) $(CXXFLAGS) netcon.cpp neuron_api.o -o netcon

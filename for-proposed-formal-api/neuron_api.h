@@ -55,6 +55,7 @@ extern void (*nrn_push_str)(char **str);
 extern char **(*nrn_pop_str)(void);
 extern void (*nrn_push_int)(int i);
 extern int (*nrn_pop_int)(void);
+extern void (*nrn_push_object)(Object* obj);
 extern Object *(*nrn_pop_object)(void);
 extern int (*nrn_stack_type)(void);
 extern char const *const (*nrn_stack_type_name)(int id);
@@ -62,6 +63,7 @@ extern Object *(*nrn_new_object)(Symbol *sym, int narg);
 extern Symbol *(*nrn_get_method_symbol)(Object *obj, char const *const name);
 extern void (*nrn_call_method)(Object *obj, Symbol *method_sym, int narg);
 extern void (*nrn_call_function)(Symbol *sym, int narg);
+extern void (*nrn_ref_object)(Object *obj);
 extern void (*nrn_unref_object)(Object *obj);
 extern char const * (*nrn_get_class_name)(Object* obj);
 
