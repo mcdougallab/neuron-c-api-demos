@@ -16,7 +16,7 @@ static const char* argv[] = {"function-callbacks", "-nogui", "-nopython", NULL};
 extern "C" void modl_reg() {};
 
 // magic number
-const int FUNCTION_TYPE = 270;
+const int FUNCTION_TYPE = 280;
 
 scptr_function hoc_lookup;
 optrsptri_function hoc_newobj1;
@@ -29,6 +29,7 @@ vsecptri_function mech_insert1;
 vsptr_function hoc_install_object_data_index;
 voptrsptritemptrptri_function new_sections;
 ppoptr_function ob2pntproc_0;
+vv_function hoc_ret;
 
 Section* new_section(const char* name) {
     Symbol* symbol = new Symbol;
@@ -53,6 +54,8 @@ void finitialize(double v0) {
 
 void test_callback(void) {
     cout << "Hello from C++" << endl;
+    // must call hoc_ret... don't really understand why
+    hoc_ret();
     // return value must be pushed onto the stack
     hoc_pushx(42);
 }
@@ -150,6 +153,12 @@ int main(void) {
     auto hoc_install = (scptridslptrptr_function) dlsym(handle, "_Z11hoc_installPKcidPP7Symlist");
     assert(hoc_install);
 
+    hoc_ret = (vv_function)dlsym(handle, "hoc_ret");
+    if (!hoc_ret) {
+        hoc_ret = (vv_function) dlsym(handle, "_Z7hoc_retv");
+    }
+    assert(hoc_ret);
+
 
     /***************************
      * 
@@ -190,7 +199,8 @@ int main(void) {
 
     cout << "attempting to have HOC call our function" << endl;
 
-    hoc_oc("test_callback()");
+    hoc_oc("{value=test_callback()}");
+    hoc_oc("print \"received value: \", value");
 
     /***************************
      * creating axon Section
