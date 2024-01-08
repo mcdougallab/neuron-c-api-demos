@@ -10,7 +10,7 @@
 using std::cout;
 using std::endl;
 using std::exit;
-using std::ofstream;
+using std::string;
 
 static const char* argv[] = {"function-callbacks", "-nogui", "-nopython", NULL};
 extern "C" void modl_reg() {};
@@ -30,12 +30,18 @@ vsptr_function hoc_install_object_data_index;
 voptrsptritemptrptri_function new_sections;
 ppoptr_function ob2pntproc_0;
 vv_function hoc_ret;
+nptrsecptrd_function node_exact;
+dptrsecptrsptrd_function nrn_rangepointer;
+cptrsecptr_function secname;
 
-Section* new_section(const char* name) {
+
+Section* my_section;
+
+Section* new_section(const string name) {
     Symbol* symbol = new Symbol;
     auto pitm = new hoc_Item*;
-    char* name_ptr = new char[strlen(name)];
-    strcpy(name_ptr, name);
+    char* name_ptr = new char[name.length() + 1];
+    strcpy(name_ptr, name.c_str());
     symbol->name = name_ptr;
     symbol->type = 1;
     symbol->u.oboff = 0;
@@ -46,21 +52,50 @@ Section* new_section(const char* name) {
 }
 
 
-void finitialize(double v0) {
+void finitialize(const double v0) {
     hoc_pushx(v0);
     hoc_call_func(hoc_lookup("finitialize"), 1);   
+}
+
+int nseg(Section const * const sec) {
+    // always one more node than nseg
+    return sec->nnode - 1;
 }
 
 
 void test_callback(void) {
     cout << "Hello from C++" << endl;
-    // must call hoc_ret... don't really understand why
+    // must call hoc_ret... to tell the stack we're returning a value
     hoc_ret();
     // return value must be pushed onto the stack
     hoc_pushx(42);
 }
 
+void new_finitialize_rule(void) {
+    Symbol* const v = hoc_lookup("v");
+    // set my_section(0.0.833333).v = 47
+    *nrn_rangepointer(my_section, v, 0.833333) = 47;
+    hoc_ret();
+    hoc_pushx(0);
+}
+
+
+void print_seg_v(Section* const sec) {
+    double const my_nseg = nseg(sec);
+    Symbol* const v = hoc_lookup("v");
+    for (auto i = 0; i < my_nseg; i++) {
+        const double x = (i + 0.5) / my_nseg;
+        Node* node = node_exact(sec, x);
+        cout << "    " << secname(sec) << "(" << x << ").v = " << *nrn_rangepointer(sec, v, x) << endl;
+    }
+    cout << endl;
+}
+
+
+
 int main(void) {
+    string my_generated_name = "new_finitialize_rule";
+
     Symbol* sym;
     char* error;
     int oboff;
@@ -144,11 +179,39 @@ int main(void) {
     new_sections = (voptrsptritemptrptri_function) dlsym(handle, "_Z12new_sectionsP6ObjectP6SymbolPP8hoc_Itemi");
     assert(new_sections);
 
+    nrn_rangepointer = (dptrsecptrsptrd_function) dlsym(handle, "_Z16nrn_rangepointerP7SectionP6Symbold");
+    assert(nrn_rangepointer);
+
+    secname = (cptrsecptr_function) dlsym(handle, "_Z7secnameP7Section");
+    assert(secname);
+
     hoc_install_object_data_index = (vsptr_function) dlsym(handle, "hoc_install_object_data_index");
     if (!hoc_install_object_data_index) {
         hoc_install_object_data_index = (vsptr_function) dlsym(handle, "_Z29hoc_install_object_data_indexP6Symbol");
     }
     assert(hoc_install_object_data_index);
+
+    auto nrn_change_nseg = (vsecptri_function) dlsym(handle, "_Z15nrn_change_nsegP7Sectioni");
+    assert(nrn_change_nseg);
+
+    hoc_call_func = (dvptrint_function) dlsym(handle, "hoc_call_func");
+    if (!hoc_call_func) {
+        hoc_call_func = (dvptrint_function) dlsym(handle, "_Z13hoc_call_funcP6Symboli");
+
+    }
+    assert(hoc_call_func);
+
+    node_exact = (nptrsecptrd_function) dlsym(handle, "node_exact");
+    if (!node_exact) {
+        node_exact = (nptrsecptrd_function) dlsym(handle, "_Z10node_exactP7Sectiond");
+    }
+    assert(node_exact);
+
+    auto hoc_pushstr = (vcptrptr_function) dlsym(handle, "hoc_pushstr");
+    if (!hoc_pushstr) {
+        hoc_pushstr = (vcptrptr_function) dlsym(handle, "_Z11hoc_pushstrPPc");
+    }
+    assert(hoc_pushstr);
 
     auto hoc_install = (scptridslptrptr_function) dlsym(handle, "_Z11hoc_installPKcidPP7Symlist");
     assert(hoc_install);
@@ -158,6 +221,9 @@ int main(void) {
         hoc_ret = (vv_function) dlsym(handle, "_Z7hoc_retv");
     }
     assert(hoc_ret);
+
+
+
 
 
     /***************************
@@ -188,7 +254,6 @@ int main(void) {
      * 
      **************************/
 
-    cout << "attempting to register the function" << endl;
 
     // register the function test_callback with NEURON
     sym = hoc_install("test_callback", FUNCTION_TYPE, 0, hoc_top_level_symlist);
@@ -197,15 +262,48 @@ int main(void) {
     sym->u.u_proc->nauto = 0;  // total number of local variables; always 0 for C++ function
     sym->u.u_proc->nobjauto = 0;
 
+    // register the function new_finitialize_rule with NEURON
+    char* my_generated_name_char = const_cast<char*>(my_generated_name.c_str());
+    sym = hoc_install(my_generated_name_char, FUNCTION_TYPE, 0, hoc_top_level_symlist);
+    sym->u.u_proc->defn.pf = new_finitialize_rule;
+    sym->u.u_proc->nauto = 0;  // total number of local variables; always 0 for C++ function
+    sym->u.u_proc->nobjauto = 0;
+
+
+
     cout << "attempting to have HOC call our function" << endl;
 
     hoc_oc("{value=test_callback()}");
     hoc_oc("print \"received value: \", value");
 
     /***************************
-     * creating axon Section
+     * creating Section
      **************************/
-    auto axon = new_section("axon");
+    my_section = new_section("my_section");
+    nrn_change_nseg(my_section, 3);
+    
+    cout << "Normal finitialize(-65) behavior:" << endl;
+    // show the normal finitialize behavior
+    finitialize(-65);
+    print_seg_v(my_section);
 
+    cout << "Creating an FInitializeHandler" << endl;
+    // in Python (calling a HOC function): fih = h.FInitializeHandler("new_finitialize_rule()")
+    // there is surely a better way to get the necessary char**
+    string command = my_generated_name;
+    command += "()";
+    char* command_c = const_cast<char*>(command.c_str());
+    hoc_pushstr(&command_c);
+    auto ps = hoc_newobj1(hoc_lookup("FInitializeHandler"), 1);  // 1 for 1 argument
+
+    cout << "At this point, membrane potentials are unchanged:" << endl;
+    print_seg_v(my_section);
+
+
+    cout << "Now running finitialize(-65) and printing:" << endl;
+    finitialize(-65);
+    print_seg_v(my_section);
+
+    cout << "(The difference is that new_finitialize_rule set the last segment's value to something else.)" << endl;
 
 }
