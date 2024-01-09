@@ -311,6 +311,7 @@ typedef double (*dvptrint_function) (void*, int);
 typedef Symbol* (*scptroptr_function) (char*, Object*);
 typedef double (*dsio_function) (Symbol*, int, Object*);
 typedef Symbol* (*scptrslptr_function) (const char*, Symlist*);
+typedef Symbol* (*scptridslptrptr_function) (const char*, int, double, Symlist**);
 typedef Object* (*optrsptri_function) (Symbol*, int);
 typedef Object* (*optri_function) (int);
 typedef Object** (*optrptr_function) ();
